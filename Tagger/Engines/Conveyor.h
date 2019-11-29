@@ -83,7 +83,7 @@ public:
 	int position() const;					//	getters
 	int totalPages() const;
 	void setnum(int num) { numbers[pos] = num; }	//	setter
-	int getnum(int ps) { return (ps > 0 & ps < numbers.count()) ? numbers[ps] : numbers[pos]; }	
+	int getnum(int ps) { return (ps > 0 && ps < numbers.count()) ? numbers[ps] : numbers[pos]; }	
 	int getnum() { if (works && numbers.count() > 0) return numbers.at(pos); else return 0; }
 	//This returns number of the page
 };

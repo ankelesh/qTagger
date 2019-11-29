@@ -28,42 +28,80 @@
       <Extensions>moc;h;cpp</Extensions>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
+    <Filter Include="Header Files\Engines">
+      <UniqueIdentifier>{00efb41e-0ea8-4845-b65c-12168702a851}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Engines">
+      <UniqueIdentifier>{da96ae65-7a70-4372-8d6c-d287aeebebf2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\util">
+      <UniqueIdentifier>{e1f12f55-54d8-4a36-bfab-c3a2813c1333}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\util">
+      <UniqueIdentifier>{0ed7a715-034d-480d-af97-a0f2fbbc0d5c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Widgets">
+      <UniqueIdentifier>{899509c0-ed72-453c-aed5-0a4a6e2a8294}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Widgets\Tabs">
+      <UniqueIdentifier>{f454f647-0cfb-446d-a940-360d1ee48d74}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Widgets">
+      <UniqueIdentifier>{e91b0586-59ba-4827-9fe0-56c3456dde06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Widgets\Tabs">
+      <UniqueIdentifier>{a2a9e9dc-2593-4517-8367-1192020f4a4a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Widgets\PreLaunch">
+      <UniqueIdentifier>{7d602af2-fd38-4a22-b2c5-3661006de222}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Widgets\Elements">
+      <UniqueIdentifier>{fa9324fc-f51b-4107-81e2-fc0c58c5c7d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Widgets\PreLaunch">
+      <UniqueIdentifier>{58ef7349-d28b-496a-aff2-752ebd8bd62c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Tagger.cpp">
+    <ClCompile Include="debugtrace.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="Widgets\AuthorTabWidget.cpp">
+      <Filter>Source Files\Widgets\Tabs</Filter>
+    </ClCompile>
+    <ClCompile Include="Widgets\CharacterTabWidget.cpp">
+      <Filter>Source Files\Widgets\Tabs</Filter>
+    </ClCompile>
+    <ClCompile Include="Engines\Conveyor.cpp">
+      <Filter>Source Files\Engines</Filter>
+    </ClCompile>
+    <ClCompile Include="Engines\TagEngine.cpp">
+      <Filter>Source Files\Engines</Filter>
+    </ClCompile>
+    <ClCompile Include="Widgets\Tagger.cpp">
+      <Filter>Source Files\Widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="Widgets\LaunchDialog.cpp">
+      <Filter>Source Files\Widgets\PreLaunch</Filter>
+    </ClCompile>
+    <ClCompile Include="Widgets\settingsForm.cpp">
+      <Filter>Source Files\Widgets\PreLaunch</Filter>
+    </ClCompile>
+    <ClCompile Include="Widgets\LaunchInfo.cpp">
+      <Filter>Source Files\Widgets\PreLaunch</Filter>
+    </ClCompile>
+    <ClCompile Include="Widgets\MainWindow.cpp">
+      <Filter>Source Files\Widgets\PreLaunch</Filter>
+    </ClCompile>
+    <ClCompile Include="Engines\ConsoleEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Conveyor.cpp">
+    <ClCompile Include="Widgets\TagHolder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TagEngine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AuthorTabWidget.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CharacterTabWidget.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <QtMoc Include="Tagger.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
-    <QtMoc Include="AuthorTabWidget.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
-    <QtMoc Include="CharacterTabWidget.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
-  </ItemGroup>
-  <ItemGroup>
-    <QtUic Include="Tagger.ui">
-      <Filter>Form Files</Filter>
-    </QtUic>
   </ItemGroup>
   <ItemGroup>
     <QtRcc Include="Tagger.qrc">
@@ -71,11 +109,46 @@
     </QtRcc>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Conveyor.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="debugtrace.h">
+      <Filter>Header Files\util</Filter>
     </ClInclude>
-    <ClInclude Include="TagEngine.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Engines\ConsoleEngine.h">
+      <Filter>Header Files\Engines</Filter>
     </ClInclude>
+    <ClInclude Include="Engines\Conveyor.h">
+      <Filter>Header Files\Engines</Filter>
+    </ClInclude>
+    <ClInclude Include="Engines\TagEngine.h">
+      <Filter>Header Files\Engines</Filter>
+    </ClInclude>
+    <ClInclude Include="Widgets\LaunchInfo.h">
+      <Filter>Header Files\Widgets\PreLaunch</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="Widgets\Tagger.h">
+      <Filter>Header Files\Widgets</Filter>
+    </QtMoc>
+    <QtMoc Include="Widgets\AuthorTabWidget.h">
+      <Filter>Header Files\Widgets\Tabs</Filter>
+    </QtMoc>
+    <QtMoc Include="Widgets\CharacterTabWidget.h">
+      <Filter>Header Files\Widgets\Tabs</Filter>
+    </QtMoc>
+    <QtMoc Include="Widgets\LaunchDialog.h">
+      <Filter>Header Files\Widgets\PreLaunch</Filter>
+    </QtMoc>
+    <QtMoc Include="Widgets\LabelClickable.h">
+      <Filter>Header Files\Widgets\Elements</Filter>
+    </QtMoc>
+    <QtMoc Include="Widgets\MainWindow.h">
+      <Filter>Header Files\Widgets\PreLaunch</Filter>
+    </QtMoc>
+    <QtMoc Include="Widgets\settingsForm.h">
+      <Filter>Header Files\Widgets\PreLaunch</Filter>
+    </QtMoc>
+    <QtMoc Include="Widgets\TagHolder.h">
+      <Filter>Header Files\Widgets\Tabs</Filter>
+    </QtMoc>
   </ItemGroup>
 </Project>

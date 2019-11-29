@@ -21,13 +21,15 @@ or, with refactor to std::containers and strings, to everything.
 
 struct Tag
 {
-	int id;			//	Unique id, can be used for fast search or sorts, can be key in maps
+	uint id;			//	Unique id, can be used for fast search or sorts, can be key in maps
 	QString tag;	//	Name. Can hold any characters
 	int weight = 1; //	Weight. Usable for determining the most popular tag, or to sort, etc
+	Tag();
+	Tag(QString name, int weight = 1);
 };
-
-static bool operator==(const Tag & t1, const Tag & t2) { return t1.id == t2.id; };
-static bool operator<(const Tag & t1, const Tag & t2) { return t1.weight < t2.weight; };
+typedef QList<Tag> taglist;
+inline bool operator==(const Tag & t1, const Tag & t2) { return t1.id == t2.id; };
+inline bool operator<(const Tag & t1, const Tag & t2) { return t1.weight < t2.weight; };
 
 Tag getTag(std::wfstream & wfout);	//	Use this function to stream deserialization
 Tag getTag(std::wstring & wstr);	//	Constructs tag from wstring
@@ -45,6 +47,7 @@ struct All_tag_storage
 	QList<Tag> specials;
 	QList<Tag> miscs;
 	QMap<QString, Tag> getAll();	//	This functions constructs global linker for tags
+	int count();
 };
 
 All_tag_storage load_storage(std::wfstream & wfout, bool yn = true);	//	Deserialization from stream
@@ -63,8 +66,8 @@ public:
 	TagEngine(QString fn = "no_filename.nf",bool deduce_author = false, bool comic=false, QList<Tag> &  taglib = QList<Tag>());
 	void setfname(QString fn = "no_filename.nf", bool deduce_author = false, bool comic = false, QList<Tag> &  taglib = QList<Tag>());
 	//	Tag operations
-	void addtag(Tag t);
-	void deltag(Tag t);
+	void addtag(Tag & t);
+	void deltag(Tag & t);
 	//	Author changing
 	void setauth(QString a);
 	//	Getters 
@@ -76,7 +79,7 @@ public:
 	void dropauth();
 	void droptags();
 	//	Search
-	bool hastag(Tag t) const;
+	bool hastag(Tag & t) const;
 	//	Main method - returns fully constructed string
 	QString getFinal() const;
 	//	Moves author name to the filename

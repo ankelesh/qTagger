@@ -17,7 +17,7 @@ TagEngine::TagEngine(QString fn, bool deduce_author, bool comic, QList<Tag> &  t
 		if (space_split.count() > 1)			//	If there is more than 1 word
 		{
 			QString possible_author = space_split.first();	//	then we have candidate
-			if (possible_author.contains(QRegExp("[a-z]")) | possible_author.contains(QRegExp("[à-ÿ]")))
+			if (possible_author.contains(QRegExp("[a-z]")) | possible_author.contains(QRegExp(QStringLiteral("[à-ÿ]"))))
 			{
 				//	It must contain at least one alphabetic character
 				author = possible_author;
@@ -55,7 +55,7 @@ void TagEngine::setfname(QString fn, bool deduce_author, bool comic, QList<Tag> 
 		if (space_split.count() > 1)
 		{
 			QString possible_author = space_split.first();
-			if (possible_author.contains(QRegExp("[a-z]")) | possible_author.contains(QRegExp("[à-ÿ]")))
+			if (possible_author.contains(QRegExp("[a-z]")) | possible_author.contains(QRegExp(QStringLiteral("[à-ÿ]"))))
 			{
 				author = possible_author;
 				fn = fn.remove(possible_author);
@@ -76,7 +76,7 @@ void TagEngine::setfname(QString fn, bool deduce_author, bool comic, QList<Tag> 
 	}
 	originalfname = fn;
 }
-void TagEngine::addtag(Tag t)
+void TagEngine::addtag(Tag& t)
 // Adds tag 
 {
 	if (!tagSequence.contains(t))
@@ -84,7 +84,7 @@ void TagEngine::addtag(Tag t)
 		tagSequence.push_back(t);
 	}
 }
-void TagEngine::deltag(Tag t)
+void TagEngine::deltag(Tag& t)
 //	Deletes tag
 {
 	if (tagSequence.contains(t))
@@ -104,7 +104,7 @@ void TagEngine::droptags()
 {
 	tagSequence.clear();
 }
-bool TagEngine::hastag(Tag t) const
+bool TagEngine::hastag(Tag& t) const
 {
 	return tagSequence.contains(t);
 }
@@ -154,12 +154,12 @@ QString testEngine()
 	mtagger = TagEngine("0101010 Aflux Bath.jpg", true, false);
 	testOut += mtagger.getauth() + '\n' + "ext: " + mtagger.getext() + "\nrest: " + mtagger.getfn();
 	mtagger = TagEngine("Aflux Bath.jpg", true, false);
-	mtagger.addtag(Tag({ 1, "cat", 1 }));
-	mtagger.addtag(Tag({ 2, "bed", 1 }));
-	mtagger.addtag(Tag({ 3, "tdl", 1 }));
-	mtagger.deltag(Tag({ 3, "tdl", 1 }));
+	mtagger.addtag(Tag( "cat", 1 ));
+	mtagger.addtag(Tag( "bed", 1 ));
+	mtagger.addtag(Tag( "tdl", 1 ));
+	mtagger.deltag(Tag( "tdl", 1 ));
 	testOut += "\nTest 3:\n>" + mtagger.getFinal();
-	QList<Tag> must_not_be{ Tag({1, "cat", 2}), Tag({2,"dog", 2}) };
+	QList<Tag> must_not_be{ Tag("cat", 2), Tag("dog", 2) };
 	mtagger = TagEngine("Aflux Bath cat.jpg", true, false, must_not_be);
 	testOut += "\nTest 4:\n>" + mtagger.getFinal();
 	return testOut;
@@ -188,6 +188,11 @@ QMap<QString, Tag> All_tag_storage::getAll()
 	}
 	return all;
 }
+int All_tag_storage::count()
+{
+	return fandom.count() + name.count() + chtype.count() + action.count() + actype.count() + quantity.count() + objects.count() + specials.count()
+		+ miscs.count();
+}
 All_tag_storage load_storage(std::wfstream & wfout, bool yn)
 //	Deserializator, dont forget to update it while updating storage
 {
@@ -204,6 +209,7 @@ All_tag_storage load_storage(std::wfstream & wfout, bool yn)
 		{
 			while (!(wfout.peek() == '<'))
 			{
+				wchar_t cg = wfout.peek();
 				//	Stop sym is < at the string start
 				storages[i]->push_back(getTag(wfout));
 			}
@@ -245,12 +251,13 @@ Tag getTag(std::wfstream & wfout)
 {
 		Tag tag;
 		wfout.get();	//	Deleting | symbol, which is added for better reading 
-		wfout >> tag.id >> tag.weight;
+		wfout >> tag.weight;
 			//	Gets id and weight
 		std::wstring temp;
 		wfout.get();
 		std::getline(wfout, temp);	//	rest of the line is tag name
 		tag.tag = QString::fromStdWString(temp);	//	conversion from wide string
+		tag.id = qHash(tag.tag);
 		return tag;
 }
 Tag getTag(std::wstring & wstr)
@@ -259,17 +266,28 @@ Tag getTag(std::wstring & wstr)
 	std::wstringstream wfout(wstr);
 	Tag tag;
 	wfout.get();
-	wfout >> tag.id >> tag.weight;
+	wfout >> tag.weight;
 	std::wstring temp;
 	wfout.get();
 	std::getline(wfout, temp);
 	tag.tag = QString::fromStdWString(temp);
+	tag.id = qHash(tag.tag);
 	return tag;
 }
 std::wstring putTag(Tag & t)
 // Simply drops all members to line
 {
 	std::wstringstream wsout;
-	wsout << "| " << t.id << ' ' << t.weight << " " << t.tag.toStdWString() << '\n';
+	wsout << "| " << t.weight << " " << t.tag.toStdWString() << '\n';
 	return wsout.str();
+}
+
+Tag::Tag()
+	:	id(0), tag(""), weight(0)
+{
+}
+
+Tag::Tag(QString name, int Weight)
+	: id(qHash(name)), tag(name), weight(Weight)
+{
 }

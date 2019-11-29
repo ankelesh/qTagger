@@ -1,4 +1,4 @@
-﻿#include "Tagger.h"
+﻿#include "Widgets/MainWindow.h"
 #include <QApplication>
 #include <qscreen.h>
 

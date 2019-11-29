@@ -2,15 +2,14 @@
 
 
 AuthorTabWidget::AuthorTabWidget(QWidget * root, QList <Tag>  & auths, int& glcl, int interface_fnt, int tag_font)
-	: QWidget(root), tags(), linker(), lastAuthor({ -1, "unknown", 0 }),
+	: QWidget(root), allauthors(&auths), tags(),  lastAuthor("unknown", 0 ),
 	mainLayout(new QHBoxLayout(this)),listLayout(new QVBoxLayout(this)),
 	buttonHolder(new QVBoxLayout(this)),
-	tagholder(new QListWidget(this)), addButton(new QPushButton("Add\nauthor", this)),
+	tagholder(new TagHolder(0, auths, this)), addButton(new QPushButton("Add\nauthor", this)),
 	eraseButton(new QPushButton("Erase", this)), breakDeduce(new QPushButton("Author\n to name", this))
 	,unknownButton(new QPushButton("Set \nunknown", this)),deleteButton(new QPushButton("Delete\n author", this))
 	, apply(new QPushButton("Apply\n tag", this)),completer(new QCompleter(tags,this)), 
 	search(new QLineEdit()), global_tag_counter(glcl)
-	//	Constructs and fills widgets with data
 {
 	//Main layout setup
 	this->setLayout(mainLayout);
@@ -43,28 +42,24 @@ AuthorTabWidget::AuthorTabWidget(QWidget * root, QList <Tag>  & auths, int& glcl
 	apply->setSizePolicy(exp);
 	apply->setFont(font_int);
 	//	Set up the linker and view of the list
-	auto begin = auths.begin();
-	while (begin != auths.end())
-	{
-		tags.push_back(begin->tag);
-		linker.insert(begin->tag, *begin);
-		tagholder->addItem("");
-		++begin;
-	}	
 	tagholder->setFont(font_tag);
 	sort_and_refresh();
 	//	Connecting all buttons to their slots
 	QObject::connect(tagholder, &QListWidget::itemDoubleClicked, this, &AuthorTabWidget::list_clicked);
+	QObject::connect(tagholder, &TagHolder::addRequest, this, &AuthorTabWidget::add_tag_press);
+	QObject::connect(tagholder, &TagHolder::eraseRequest, this, &AuthorTabWidget::erase_press);
+	QObject::connect(tagholder, &TagHolder::applyRequest, this, &AuthorTabWidget::apply_press);
+	QObject::connect(tagholder, &TagHolder::goOutHere, this, &AuthorTabWidget::leaveThis);
+	QObject::connect(tagholder, &TagHolder::confirmThisImage, this, &AuthorTabWidget::taggingThisImageDone);
 	QObject::connect(addButton, &QPushButton::clicked, this, &AuthorTabWidget::add_tag_press);
 	QObject::connect(eraseButton, &QPushButton::clicked, this, &AuthorTabWidget::erase_press);
 	QObject::connect(breakDeduce, &QPushButton::clicked, this, &AuthorTabWidget::break_de_press);
 	QObject::connect(unknownButton, &QPushButton::clicked, this, &AuthorTabWidget::unknown_press);
 	QObject::connect(search, &QLineEdit::returnPressed, this, &AuthorTabWidget::search_completed);
-	QObject::connect(deleteButton, &QPushButton::clicked, this, &AuthorTabWidget::delete_press);
-	QObject::connect(apply, &QPushButton::clicked, this, [this](bool b) {
-		emit AuthorTabWidget::list_clicked(this->getCurrItem()); });
+	QObject::connect(deleteButton, &QPushButton::clicked, tagholder, &TagHolder::deleteSelectedTags);
+	QObject::connect(apply, &QPushButton::clicked, this, &AuthorTabWidget::apply_press);
 }
-void AuthorTabWidget::add_tag_press()
+void AuthorTabWidget::add_tag_press(int)
 //	This slot ascs new tag name and creates tew tag object
 {
 	//Ask new name using QInputDialog
@@ -76,15 +71,12 @@ void AuthorTabWidget::add_tag_press()
 		if (!tags.contains(newAuth)) //	If this author IS new
 		{
 			tags.push_back(newAuth);	//	new author is added to the view
-			linker.insert(newAuth, Tag({ ++global_tag_counter, newAuth, 1 }));
+			tagholder->addTag(newAuth);
 			//	linker connects view with real tag object, which is created with value 1 
-			tagholder->addItem(tags.last());	//	refresh view
 		}
 	}
-	delete completer;
-	completer = new QCompleter(tags, this);
-	search->setCompleter(completer);
-	emit author_add(linker[newAuth]);
+	tagholder->item(tagholder->count()-1)->setSelected(true);
+	emit author_add(allauthors->last());
 }
 void AuthorTabWidget::erase_press()
 //	This slot just passes signal further
@@ -99,17 +91,16 @@ void AuthorTabWidget::break_de_press()
 void AuthorTabWidget::list_clicked(QListWidgetItem * qlwi)
 //	This slot updates list and emits author signal
 {
-	if (qlwi->text() != "")	//	If the view was correct
+	auto tlist = tagholder->getSelectedTags();
+	if (tlist.count() == 1)
 	{
-		++linker[qlwi->text()].weight;	//	update weight
-		emit got_author(linker[qlwi->text()]);
-		sort_and_refresh();
+		emit got_author(tlist.first());
 	}
 }
 void AuthorTabWidget::unknown_press()
 //	This slot emits got_author with dummy values
 {
-	emit got_author(Tag{ 0,"unknown_author", 0 });
+	emit got_author(Tag("unknown_author", 0));
 }
 void AuthorTabWidget::search_completed()
 //	This slot responds for search field operations
@@ -117,7 +108,7 @@ void AuthorTabWidget::search_completed()
 	QString line = search->text();
 	if (tags.contains(line))	//	if there is author like this
 	{
-		emit got_author(linker[line]);
+		emit got_author(tagholder->findTag(line));
 	}
 	else
 	{	//	Ask for the new one
@@ -128,68 +119,64 @@ void AuthorTabWidget::search_completed()
 		{
 			if (!tags.contains(newAuth)) {
 				tags.push_back(newAuth);
-				linker.insert(newAuth, Tag({ ++global_tag_counter, newAuth, 1 }));
-				tagholder->addItem(tags.last());
+				tagholder->addTag(newAuth);
 				delete completer;
 				completer = new QCompleter(tags, this);
 				search->setCompleter(completer);
-				emit got_author(linker[newAuth]);
+				emit got_author(tagholder->findTag(newAuth));
 			}
 		}
 	}
 }
-void AuthorTabWidget::delete_press()
-//	This slot responds for deleting the selected items
+
+void AuthorTabWidget::apply_press()
 {
-	if (tagholder->currentItem()->text() != "")
+	auto list = tagholder->getSelectedTags();
+	if (list.isEmpty())
 	{
-		if (tags.contains(tagholder->currentItem()->text()))
+		return;
+	}
+	emit got_author(list.first());
+}
+void AuthorTabWidget::leaveThis(int id, bool forward)
+{
+	if (id == 0)
+	{
+		if (forward)
 		{
-			//Remove tag from everywhere - from widget, linker and view
-			linker.remove(tagholder->currentItem()->text());
-			tagholder->takeItem(tagholder->count()-1);
-			sort_and_refresh();
+			emit goOutThis( tagholder->getId()+1, -1);
+		}
+		else
+		{
+			emit goOutThis(-1, -2);
 		}
 	}
 }
 void AuthorTabWidget::sort_and_refresh()
 //	This method updates view and sorts authors by popularity
 {
-	QVector<Tag> temp;			//	Temp vector for the faster sort
-	temp.resize(linker.count());
-	std::copy(linker.begin(), linker.end(), temp.begin());	
-	std::sort(temp.begin(), temp.end(), [=](Tag & t1, Tag & t2) {return t1.weight > t2.weight; });
-	//After sorting vector, starts copy actions
-	auto beg = temp.begin();
-	tags.clear();
-	while (beg != temp.end())
-	{	//	copy from vector back to tags
-		tags.push_back(beg->tag);
-		++beg;
-	}
-	for (int i = 0; i < tagholder->count(); ++i)
-	{
-		// refresh list view
-		tagholder->item(i)->setText(tags.at(i));
-	}
+	std::sort(allauthors->begin(), allauthors->end(), [=](Tag & t1, Tag & t2) {return t1.weight > t2.weight; });
+	tagholder->reload();
 }
 void AuthorTabWidget::setLAuthor(QString & qs)
 {
 	if (tags.contains(qs))
 	{
-		lastAuthor = linker[qs];
+		lastAuthor = tagholder->findTag(qs);
 	}
 }
 QList<Tag> AuthorTabWidget::getAuthors()
 //	Turns the linker map back to list
 {
-	QList<Tag> auths;
-	auths.reserve(linker.count());
-	auto beg = linker.begin();
-	while (beg != linker.end())
-	{
-		auths.push_back(*beg);
-		++beg;
-	}
-	return auths;
+	return *allauthors;
+}
+
+void AuthorTabWidget::prepare()
+{
+	tagholder->setFocus();
+}
+
+void AuthorTabWidget::applyCurrent()
+{
+	apply_press();
 }

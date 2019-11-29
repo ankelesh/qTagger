@@ -1,6 +1,6 @@
 #pragma once
 #include "CharacterTabWidget.h"
-
+#include "Widgets/TagHolder.h"
 /*
 		This file contains specialized widget for managing author tags
 			AuthorTabWidget		-	QWidget child, contains QListWidget and lot of buttons
@@ -16,13 +16,13 @@ class AuthorTabWidget : public QWidget
 {
 	Q_OBJECT
 private:
-	QStringList tags;			//	Holds tag names for displaying them
-	QMap <QString, Tag> linker;	//	Binds names in the list widget to real tags
+	taglist* allauthors;
+	QStringList tags;
 	Tag lastAuthor;				//	Holds last author choose
 	QHBoxLayout * mainLayout;	//	Holds all elements
 	QVBoxLayout * listLayout;	//	Holds list widget and search string
 	QVBoxLayout * buttonHolder;	//	Holds all buttons
-	QListWidget * tagholder;	//	Holds author names
+	TagHolder * tagholder;	//	Holds author names
 	QPushButton * addButton;	
 	QPushButton * eraseButton;
 	QPushButton *breakDeduce;
@@ -40,22 +40,27 @@ public:
 	QString getLAuthor() { return lastAuthor.tag; };
 	void setLAuthor(Tag & t) { lastAuthor = t; };
 	void setLAuthor(QString & qs);
-	int getAuthsCount() const { return linker.count(); }
+	int getAuthsCount() const { return allauthors->count(); }
 	QListWidgetItem * getCurrItem() { return tagholder->currentItem(); };
 	QList<Tag> getAuthors();
+	void prepare();
+	void applyCurrent();
 public slots:
-	void add_tag_press();
+	void add_tag_press(int id = 0);
 	void erase_press();
 	void break_de_press();
 	void list_clicked(QListWidgetItem * qlwi);
 	void unknown_press();
 	void search_completed();
-	void delete_press();
+	void apply_press();
+	void leaveThis(int id, bool forward);
 signals:
 	void author_add(Tag t);
 	void author_erase();
 	void break_deduction(QString qs);
 	void got_author(Tag t);
+	void goOutThis(int id, int page);
+	void taggingThisImageDone();
 };
 
 

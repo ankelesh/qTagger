@@ -1,10 +1,16 @@
 ﻿#include "Conveyor.h"
+#define DEBUG
+#ifdef DEBUG
+#include "debugtrace.h"
+#endif
 
 
 QPixmap getImg(QDir & from, const QString & fname, QSize & resolution)
 //	This function loads image and scales it to given size
 {
 	QPixmap qp(from.absoluteFilePath(fname));
+	detrace_METHEXPL("path was: " << from.absoluteFilePath(fname));
+
 	QSize qps = qp.size();
 	int qpsmax = (((float)qps.width() / (float)resolution.width()) >
 		((float)qps.height() / (float)resolution.height())) ?		//	Scaling by the largest size
@@ -119,8 +125,13 @@ QPair<QPixmap, QString> Conveyor::next()
 				works = false;	//	No unchecked images? Stop conveyor
 		}
 		else
+		{
+			if (root.entryList().isEmpty())
+				return QPair<QPixmap, QString> {getImg(root, current, resolution), current};
+
 			current = root.entryList().first();
 			return QPair<QPixmap, QString> {getImg(root, current, resolution), current};
+		}
 	}
 		//	This result is provided if nothing to return
 		return QPair<QPixmap, QString>{QPixmap(EndOCol), "None"};

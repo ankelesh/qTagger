@@ -1,5 +1,5 @@
 #pragma once
-#include "Conveyor.h"
+#include "Engines/Conveyor.h"
 #include "AuthorTabWidget.h"
 #include <qformlayout.h>
 #include <qradiobutton.h>
@@ -7,8 +7,9 @@
 #include <qlabel.h>
 #include <qspinbox.h>
 #include <Qt3DInput/qmouseevent.h>
-
-
+#include "LaunchInfo.h"
+#include "Engines/TagEngine.h"
+#include "LabelClickable.h"
 #define SAVE_FILENAME "appdata.txt"
 static const float VERSION = 1.06;
 static const float LATEST_SUPPORTED_SAVE = 1.06;
@@ -51,101 +52,14 @@ static const int   TAGS_FONT_SIZE = 15;
 								save_called()		-	dumps all program data into file with SAVE_FILENAME path
 				 */		
 
-namespace LaunchInfo 
-{
-	enum ConveyorMode { standard, comic };		//	defines which conveyor must be constructed
-	struct options								//	holds info used for Tagger constructor
-	{
-		QString ifname;							//	path of input directory
-		QString ofname;							//	path of output directory
-		ConveyorMode mod;						//	which conveyor will be constructed
-		bool deduce_author;						//	tagengine setting 
-		bool clear_tags;						//	conveyor settings
-		bool backup;
-		bool delete_original;
-		int font_interface;
-		int font_tags;
-		QSize winsize;							//	size of the available space for displaying image
-	};
-	std::wstring serialize(LaunchInfo::options & opt);	//	serialization and deserializations functs
-	LaunchInfo::options deserialize(std::wfstream & fout);
-}
 static const LaunchInfo::options DEFAULTS({			//	This defaults are used when no saves exists
 			"C:\\", "C:\\tagged", LaunchInfo::standard,	true, false, 
 			true, true, INTERFACE_FONT_SIZE, TAGS_FONT_SIZE , QSize()
 	});
 
-class settingsForm : public QWidget
-	//	This class coonstructs form for user input
-{
-	Q_OBJECT
-private:
-	QFormLayout * formlayout;
-	QLineEdit * rpath;		//	input dir
-	QLineEdit * opath;		//	output dir
-	QHBoxLayout * rb;		
-	QRadioButton * comicmode;	//	radiobuttons to determine which mode will be used
-	QRadioButton * stdmode;
-	QCheckBox * d_auth;			//	checkboxes	for bool variables in options
-	QCheckBox * cl_tg;
-	QCheckBox * bck;
-	QCheckBox * delor;
-	QSpinBox * font_int;
-	QSpinBox * font_tag;
-public:
-	settingsForm(QWidget * qw, LaunchInfo::options & opts);
-	LaunchInfo::options submit();	//	collects info from form into options structure
-public slots:
-	void onChange();			//		changes opath to be synced with rpath
-	void onEnter();				//		sends request to continue
-signals:
-	void done();				//		is emitted when user finishes filling the form
-};
-class LaunchDialog : public QWidget
-	//	This class creates window with form to asc user about settings
-{
-	Q_OBJECT
-private:
-	LaunchInfo::options opts;		//	holds options
-	QVBoxLayout * mainlayout;		//	layouts and buttons
-	QLabel * header;
-	settingsForm * setform;
-	QHBoxLayout * butlay;
-	QPushButton * ok;
-	QPushButton * cancel;
-	QRect scr;						//	holds size of the application window
-public:
-	LaunchInfo::options submit() 
-	//	This function wraps settings form to  fill winsize part of options
-	{
-		opts = setform->submit();
-		opts.winsize.setHeight(scr.height() * 0.9);		//	future image will have 60% width of the screen 
-		opts.winsize.setWidth(scr.width() * 0.6);
-		return opts;
-	};
-	LaunchDialog(LaunchInfo::options & opt, QRect & rct);
-public slots:
-	void onOk();
-signals:
-	void done();
-};
-class LabelClickable : public QLabel
-	//	Simple wrapper to override method
-{
-	Q_OBJECT
-public:
-	LabelClickable(const QString &text, QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags())
-		:QLabel(text, parent, f) {};
-	LabelClickable(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags())
-		:QLabel(parent, f) {};
-	void mousePressEvent(QMouseEvent * qme)
-		//	emits signal that label was clicked, determines which screen side was clicked, left = true
-	{
-		emit clicked((qme->x() < (size().width() / 2))); QLabel::mousePressEvent(qme);
-	}
-signals:
-	void clicked(bool side);
-};
+
+
+
 class Tagger : public QWidget
 	//	Main gui class
 {
@@ -155,7 +69,7 @@ private:
 	abs_conveyor * conveyor;			//	pointer to conveyor
 	TagEngine tagengine;				//	tagengine 
 	QList<Tag> all_authors;				//	holds author tags
-	QMap<QString, Tag> all_tags;		//	links all tags to their names
+	All_tag_storage& all_tags;		//	links all tags to their names
 	QPair<QPixmap, QString> current_workset;	//	holds pair of <Image to display : its filename>
 	QHBoxLayout * mainLayout;			//	Gui objects
 	LabelClickable * imageSlot;
@@ -168,9 +82,7 @@ private:
 	QLabel * extensionField;
 	QTabWidget * tagSetupArea;
 	AuthorTabWidget * authorTab;
-	TripleListTabWidget * characterTab;
-	TripleListTabWidget * actionsTab;
-	TripleListTabWidget * miscTab;
+	TripleListTabWidget * tripleTabs[3];
 	QPushButton * delImgButton;
 	QPushButton * nextButton;
 	QPushButton * delComicPageButton;
@@ -196,54 +108,8 @@ public slots:
 	void image_click_received(bool side);
 	void pagenum_changed(int nvl);
 	void delete_curr_comic_page();
+	void gotoPageAndId(int id, int page);
 signals:
 	void save_time();
 };
-class mainWindow :public QObject
-	//	This class controls launchDialog window and creates Tagger window
-{
-	Q_OBJECT
-public:
-	struct full_start_set
-		//	This structure holds everything used in program
-	{
-		LaunchInfo::options opts;		//	options to make conveyor
-		All_tag_storage tags;			//	all tags
-		QList<Tag> authors;				//	all authors
-		void erase() {
-			//	method to erase all, used for saving memory
-			tags.fandom.clear();
-			tags.name.clear();
-			tags.chtype.clear();
-			authors.clear();
-		}
-	};
-private:
-	QWidget root;		//	core widget, parent of the Tagger
-	full_start_set start_set;	//	Settings and tags
-	LaunchDialog * ld;		//	launch dialog and tagger windows
-	Tagger * t;
-	int glc;				//	loaded value of global tag counter
-public:
-	full_start_set loadAll(QString fname);	//	Loads from SAVE_FILENAME program data
-	mainWindow(QRect & geom) :root()
-	{
-		glc = 0;				//	by default, constructs empty start_set and fills it with defaults
-		start_set = loadAll("appdata.txt");	//	then attempts to load data
-		
-		ld = new LaunchDialog(start_set.opts, geom);		//	presets dialog with loaded info
-		QObject::connect(ld, &LaunchDialog::done, this, &mainWindow::onLDconfirm);
-		ld->show();
-		t = nullptr;
-	}
-	void dumpAll(QString fname);	//	saves program data
-	~mainWindow()
-		//	attempts to save data if the application was shut down
-	{
-		if (t != nullptr)
-			dumpAll(SAVE_FILENAME);
-	}
-public slots:
-	void onLDconfirm(); 
-	void save_called() { dumpAll(SAVE_FILENAME); }
-};
+
